@@ -1,0 +1,26 @@
+[
+  {
+    "id": "diary",
+    "name": "日记",
+    "version": "1.0.0",
+    "description": "AI 辅助日记写作，时间线浏览",
+    "icon": "BookOpen",
+    "permissions": ["ai", "files"]
+  },
+  {
+    "id": "hello-world",
+    "name": "Hello World",
+    "version": "1.0.0",
+    "description": "示例插件——演示 React/TSX、AI 工具、Supabase 集成",
+    "icon": "Package",
+    "permissions": ["ai", "supabase", "cloudinary", "sandbox", "files"]
+  },
+  {
+    "id": "inspiration",
+    "name": "灵感",
+    "version": "1.0.0",
+    "description": "灵感收集与管理，随机漫步",
+    "icon": "Lightbulb",
+    "permissions": ["ai", "files", "cloudinary"]
+  }
+]

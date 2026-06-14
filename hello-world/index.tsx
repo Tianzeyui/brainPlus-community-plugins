@@ -110,8 +110,9 @@ export function register(ctx: any) {
         }
         const r = await graph.query(cypher)
         setGraphResult(JSON.stringify(r, null, 2))
+        if (!r.success) { ui.toast(r.error || '查询失败', 'error'); return }
         if (action === 'delete') ui.toast('数据已清除')
-      } catch (e: any) { setGraphResult('Error: ' + e.message) }
+      } catch (e: any) { setGraphResult('Error: ' + e.message); ui.toast(e.message || '执行失败', 'error') }
       setGraphRunning(false)
     }
 

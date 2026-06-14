@@ -14,7 +14,7 @@
     "version": "1.0.0",
     "description": "示例插件——演示 React/TSX、AI 工具、Supabase 集成",
     "icon": "Package",
-    "permissions": ["ai", "supabase", "cloudinary", "sandbox", "files"],
+    "permissions": ["ai", "supabase", "cloudinary", "sandbox", "files", "graph"],
     "files": ["manifest.json", "index.tsx", "package.json"]
   },
   {

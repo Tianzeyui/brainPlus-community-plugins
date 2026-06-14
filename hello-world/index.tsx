@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 
 export function register(ctx: any) {
-  const { supabase, cloudinary, ai, dialog, file: fileApi, fs, storage, http, ui, workspace, plugin, sandbox } = ctx.api
+  const { supabase, cloudinary, ai, dialog, file: fileApi, fs, storage, http, ui, workspace, plugin, sandbox, notify, confirm } = ctx.api
 
   const MyPage = () => {
     const [name, setName] = useState('')
@@ -488,6 +488,55 @@ export function register(ctx: any) {
                   <p className="text-[10px] text-muted-foreground mt-0.5">{desc}</p>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 通知与确认 */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Bell className="h-4 w-4 text-muted-foreground shrink-0" />
+              <h3 className="text-xs font-semibold text-foreground">通知与确认</h3>
+              <Badge variant="secondary" className="text-[10px] px-1 py-0">notify · confirm</Badge>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {/* 通知 */}
+              <div className="rounded border border-border bg-muted/30 px-3 py-2 space-y-1.5">
+                <span className="text-[11px] font-medium text-foreground">发送通知</span>
+                <div className="flex flex-wrap gap-1">
+                  <Button size="sm" variant="outline" className="h-7 text-[10px]"
+                    onClick={() => notify({ title: 'Hello World', message: '这是一条来自 Hello World 插件的通知' })}>
+                    普通通知
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-[10px]"
+                    onClick={() => notify({ type: 'warning', title: '注意', message: '这是一条警告通知' })}>
+                    警告通知
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-[10px]"
+                    onClick={() => notify({ type: 'error', title: '错误', message: '这是一条错误通知' })}>
+                    错误通知
+                  </Button>
+                </div>
+              </div>
+              {/* 确认 */}
+              <div className="rounded border border-border bg-muted/30 px-3 py-2 space-y-1.5">
+                <span className="text-[11px] font-medium text-foreground">请求确认</span>
+                <Button size="sm" variant="outline" className="h-7 text-[10px] w-full"
+                  onClick={async () => {
+                    const result = await confirm({
+                      title: '删除确认',
+                      message: '模拟危险操作：确认删除所有数据？',
+                      actions: [
+                        { key: 'ok', label: '确认删除', variant: 'destructive' },
+                        { key: 'cancel', label: '取消' },
+                      ],
+                    })
+                    ui.toast(result === 'ok' ? '用户同意删除！（模拟）' : '用户取消了操作', result === 'ok' ? 'error' : 'info')
+                  }}>
+                  删除确认（模拟）
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

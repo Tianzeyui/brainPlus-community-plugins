@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 
 export function register(ctx: any) {
-  const { supabase, cloudinary, ai, dialog, file: fileApi, fs, storage, http, ui, workspace, plugin, sandbox, notify, confirm } = ctx.api
+  const { supabase, cloudinary, ai, dialog, file: fileApi, fs, storage, http, ui, workspace, plugin, sandbox, notify, confirm, graph } = ctx.api
 
   const MyPage = () => {
     const [name, setName] = useState('')
@@ -91,6 +91,28 @@ export function register(ctx: any) {
         setHttpResult(data)
         ui.toast('HTTP 请求成功', 'success')
       } catch (e: any) { setHttpResult(`失败: ${e.message}`) }
+    }
+
+    // 图数据库演示
+    const [graphResult, setGraphResult] = useState('')
+    const [graphRunning, setGraphRunning] = useState(false)
+
+    const graphDemo = async (action: string) => {
+      setGraphRunning(true); setGraphResult('')
+      try {
+        let cypher = ''
+        if (action === 'create') {
+          cypher = 'CREATE (a:Person {name: \'Alice\', age: 30}), (b:Person {name: \'Bob\', age: 25}), (a)-[:KNOWS {since: 2024}]->(b), (a)-[:WORKS_WITH]->(c:Person {name: \'Charlie\', age: 35}), (b)-[:WORKS_WITH]->(c) RETURN a.name, b.name, c.name'
+        } else if (action === 'query') {
+          cypher = 'MATCH (a:Person)-[r]->(b:Person) RETURN a.name, type(r) as rel, b.name, r.since'
+        } else if (action === 'delete') {
+          cypher = 'MATCH (n:Person) DETACH DELETE n'
+        }
+        const r = await graph.query(cypher)
+        setGraphResult(JSON.stringify(r, null, 2))
+        if (action === 'delete') ui.toast('数据已清除')
+      } catch (e: any) { setGraphResult('Error: ' + e.message) }
+      setGraphRunning(false)
     }
 
     // API 自检
@@ -538,6 +560,34 @@ export function register(ctx: any) {
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 图数据库 */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="h-4 w-4 text-muted-foreground shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M6.5 17.5L10.5 7"/><path d="M17.5 17.5L13.5 7"/><path d="M12 7v2"/></svg>
+              <h3 className="text-xs font-semibold text-foreground">图数据库</h3>
+              <Badge variant="secondary" className="text-[10px] px-1 py-0">graph</Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground/50 mb-2">需在设置→能力中配置 Neo4j 连接。数据自动隔离。</p>
+            <div className="flex gap-1.5 mb-2">
+              <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => graphDemo('create')} disabled={graphRunning}>
+                创建数据
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => graphDemo('query')} disabled={graphRunning}>
+                查询关系
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={async () => {
+                if (!confirm('确认删除所有图数据？')) return
+                await graphDemo('delete')
+              }} disabled={graphRunning}>
+                删除全部
+              </Button>
+            </div>
+            {graphRunning && <p className="text-[10px] text-muted-foreground"><Loader2 className="inline h-3 w-3 animate-spin mr-1" />执行中...</p>}
+            {graphResult && <pre className="max-h-48 overflow-auto rounded border border-border bg-muted/20 p-2 font-mono text-[10px] leading-relaxed whitespace-pre-wrap">{graphResult}</pre>}
           </CardContent>
         </Card>
 

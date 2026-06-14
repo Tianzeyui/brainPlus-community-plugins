@@ -1,20 +1,25 @@
-# BrainPlus 社区插件
+<p align="center">
+  <a href="./README.md">English</a> |
+  <a href="./README_zh.md">中文</a>
+</p>
 
-[BrainPlus](https://github.com/Tianzeyui/brainPlus) 的社区插件集合。
+# BrainPlus Community Plugins
 
-## 插件列表
+Community plugin collection for [BrainPlus](https://github.com/Tianzeyui/brainPlus).
 
-| 插件 | 描述 |
-|------|------|
-| `_template` | 插件开发模板，创建新插件时使用 |
-| `hello-world` | 入门示例插件 |
-| `diary` | 日记插件 |
-| `inspiration` | 灵感记录插件 |
+## Plugin List
 
-## 使用方式
+| Plugin | Description |
+|--------|-------------|
+| `_template` | Plugin development template — use as a starting point |
+| `hello-world` | Getting started example plugin |
+| `diary` | Diary plugin |
+| `inspiration` | Inspiration capture plugin |
 
-将插件目录复制到 [BrainPlus](https://github.com/Tianzeyui/brainPlus) 的 `plugins/` 目录下即可使用。
+## Usage
 
-## 开发插件
+Copy the desired plugin directory into your [BrainPlus](https://github.com/Tianzeyui/brainPlus) `plugins/` folder.
 
-参考 `_template` 目录作为模板，复制后修改即可开始开发。
+## Plugin Development
+
+Use `_template` as a starting point — copy it and customize to begin building your own plugin.

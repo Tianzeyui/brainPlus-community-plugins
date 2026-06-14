@@ -7,7 +7,7 @@
   "navOrder": 90,
   "enabled": true,
   "systemHeader": false,
-  "permissions": ["ai", "supabase", "cloudinary", "sandbox", "files"],
+  "permissions": ["ai", "supabase", "cloudinary", "sandbox", "files", "graph"],
   "tools": [
     {
       "name": "plugin_hello",

@@ -5,7 +5,8 @@
     "version": "1.0.0",
     "description": "AI 辅助日记写作，时间线浏览",
     "icon": "BookOpen",
-    "permissions": ["ai", "files"]
+    "permissions": ["ai", "files"],
+    "files": ["manifest.json", "index.tsx", "package.json", "supabase/diary.sql"]
   },
   {
     "id": "hello-world",
@@ -13,7 +14,8 @@
     "version": "1.0.0",
     "description": "示例插件——演示 React/TSX、AI 工具、Supabase 集成",
     "icon": "Package",
-    "permissions": ["ai", "supabase", "cloudinary", "sandbox", "files"]
+    "permissions": ["ai", "supabase", "cloudinary", "sandbox", "files"],
+    "files": ["manifest.json", "index.tsx", "package.json"]
   },
   {
     "id": "inspiration",
@@ -21,6 +23,7 @@
     "version": "1.0.0",
     "description": "灵感收集与管理，随机漫步",
     "icon": "Lightbulb",
-    "permissions": ["ai", "files", "cloudinary"]
+    "permissions": ["ai", "files", "cloudinary"],
+    "files": ["manifest.json", "index.tsx", "package.json", "supabase/inspiration.sql"]
   }
 ]

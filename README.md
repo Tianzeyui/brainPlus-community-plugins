@@ -3,9 +3,9 @@
   <a href="./README_zh.md">中文</a>
 </p>
 
-# BrainPlus Community Plugins
+# Stardust Community Plugins
 
-Community plugin collection for [BrainPlus](https://github.com/Tianzeyui/brainPlus).
+Community plugin collection for [Stardust](https://github.com/Tianzeyui/stardust).
 
 ## Plugin List
 
@@ -18,7 +18,7 @@ Community plugin collection for [BrainPlus](https://github.com/Tianzeyui/brainPl
 
 ## Usage
 
-Copy the desired plugin directory into your [BrainPlus](https://github.com/Tianzeyui/brainPlus) `plugins/` folder.
+Copy the desired plugin directory into your [Stardust](https://github.com/Tianzeyui/stardust) `plugins/` folder.
 
 ## Plugin Development
 

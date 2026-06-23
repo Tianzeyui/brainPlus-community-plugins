@@ -3,9 +3,9 @@
   <a href="./README_zh.md">中文</a>
 </p>
 
-# BrainPlus 社区插件
+# Stardust 社区插件
 
-[BrainPlus](https://github.com/Tianzeyui/brainPlus) 的社区插件集合。
+[Stardust](https://github.com/Tianzeyui/stardust) 的社区插件集合。
 
 ## 插件列表
 
@@ -18,7 +18,7 @@
 
 ## 使用方式
 
-将插件目录复制到 [BrainPlus](https://github.com/Tianzeyui/brainPlus) 的 `plugins/` 目录下即可使用。
+将插件目录复制到 [Stardust](https://github.com/Tianzeyui/stardust) 的 `plugins/` 目录下即可使用。
 
 ## 开发插件
 

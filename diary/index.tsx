@@ -132,5 +132,33 @@ export function register(ctx: any) {
         }
       },
     }
+
+    tools['diary_delete'] = {
+      description: '删除指定日期的日记条目。此操作不可撤销，请确认后再执行。',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: '要删除的日记日期，格式 YYYY-MM-DD' },
+        },
+        required: ['date'],
+      },
+      execute: async (args: { date: string }) => {
+        try {
+          const sb = getClient()
+          const { data: { user } } = await sb.auth.getUser()
+          if (!user) throw new Error('未登录')
+          const { data, error: selectErr } = await sb.from('diary_entries')
+            .select('id, title').eq('user_id', user.id).eq('entry_date', args.date).maybeSingle()
+          if (selectErr) throw selectErr
+          if (!data) return `${args.date} 没有日记记录，无需删除。`
+          const { error } = await sb.from('diary_entries').delete().eq('id', data.id)
+          if (error) throw error
+          const label = (data as any).title ? `「${(data as any).title}」` : ''
+          return `✅ 已删除 ${args.date} ${label} 的日记。`
+        } catch (e: any) {
+          return `删除日记失败：${e.message}`
+        }
+      },
+    }
   })
 }

@@ -172,8 +172,6 @@ export function register(ctx: any) {
     const anchorDateRef = useRef<Date>(getMonday(new Date()))
 
     const scrollRef = useRef<HTMLDivElement>(null)
-    const leftPanelRef = useRef<HTMLDivElement>(null)
-    const syncScrollRef = useRef(false)
     const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const tooltipDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const contextMenuRef = useRef<HTMLDivElement>(null)
@@ -250,25 +248,6 @@ export function register(ctx: any) {
       }
     }, [loaded, anchorDate])
 
-    // ---- Scroll sync ----
-    const handleLeftScroll = useCallback(() => {
-      if (syncScrollRef.current) return
-      syncScrollRef.current = true
-      if (leftPanelRef.current && scrollRef.current) {
-        scrollRef.current.scrollTop = leftPanelRef.current.scrollTop
-      }
-      requestAnimationFrame(() => { syncScrollRef.current = false })
-    }, [])
-
-    const handleMainScroll = useCallback(() => {
-      if (syncScrollRef.current) return
-      syncScrollRef.current = true
-      if (leftPanelRef.current && scrollRef.current) {
-        leftPanelRef.current.scrollTop = scrollRef.current.scrollTop
-      }
-      requestAnimationFrame(() => { syncScrollRef.current = false })
-    }, [])
-
     // ---- Context menu dismiss ----
     useEffect(() => {
       if (!contextMenu) return
@@ -300,8 +279,8 @@ export function register(ctx: any) {
       const container = scrollRef.current
       if (!container) return
       const rect = container.getBoundingClientRect()
-      const clickX = e.clientX - rect.left + container.scrollLeft
-      const dayIdx = Math.floor(clickX / DAY_WIDTH)
+      const clickX = e.clientX - rect.left + container.scrollLeft - 200 // 200 = left panel width
+      const dayIdx = Math.max(0, Math.floor(clickX / DAY_WIDTH))
       const d = new Date(anchorDate)
       d.setDate(d.getDate() + dayIdx)
       let mx = e.clientX, my = e.clientY
@@ -500,16 +479,14 @@ export function register(ctx: any) {
       )
     }
 
+    const LEFT_WIDTH = 200
+
     const TimelineBody = () => (
-      <div
-        style={{ width: totalDays * DAY_WIDTH, minWidth: '100%' }}
-        onContextMenu={handleContextMenu}
-      >
+      <div style={{ width: totalDays * DAY_WIDTH }} onContextMenu={handleContextMenu}>
         {sortedTasks.length === 0 ? (
           <div
             className="flex items-center justify-center text-xs text-muted-foreground/40 select-none"
             style={{ height: ROW_HEIGHT }}
-            onContextMenu={handleContextMenu}
           >
             右键此处新增工作
           </div>
@@ -519,63 +496,35 @@ export function register(ctx: any) {
               key={task.id}
               className="relative border-b border-border/20"
               style={{ height: ROW_HEIGHT }}
-              onContextMenu={handleContextMenu}
             >
-              {/* Grid columns */}
-              {Array.from({ length: totalDays }, (_, i) => {
-                const d = new Date(anchorDate)
-                d.setDate(d.getDate() + i)
-                return (
-                  <div
-                    key={i}
-                    className={cn(
-                      'absolute top-0 bottom-0 border-r border-r-border/10',
-                      isToday(d) ? 'bg-primary/[0.03]' : isWeekend(d) ? 'bg-muted/10' : '',
-                    )}
-                    style={{ left: i * DAY_WIDTH, width: DAY_WIDTH }}
-                  />
-                )
-              })}
               <TaskBar task={task} />
             </div>
           ))
         )}
-        {/* Empty bottom row */}
-        <div
-          className="relative border-b border-border/20"
-          style={{ height: ROW_HEIGHT }}
-          onContextMenu={handleContextMenu}
-        />
+        {/* Empty bottom row for right-click */}
+        <div className="relative border-b border-border/20" style={{ height: ROW_HEIGHT }} />
       </div>
     )
 
-    const TaskListPanel = () => (
-      <div
-        ref={leftPanelRef}
-        className="w-[200px] shrink-0 border-r border-border overflow-y-auto bg-card"
-        onScroll={handleLeftScroll}
-      >
-        <div className="sticky top-0 z-10 bg-card border-b border-border px-3 flex items-center" style={{ height: 34 }}>
-          <span className="text-[11px] font-semibold text-muted-foreground">任务名称</span>
-          <span className="ml-auto text-[10px] text-muted-foreground/50">{tasks.length}</span>
+    // Grid overlay: rendered once behind all task rows
+    const GridOverlay = () => (
+      <div className="absolute inset-0 pointer-events-none" style={{ left: LEFT_WIDTH }}>
+        <div style={{ width: totalDays * DAY_WIDTH, height: '100%' }}>
+          {Array.from({ length: totalDays }, (_, i) => {
+            const d = new Date(anchorDate)
+            d.setDate(d.getDate() + i)
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'absolute top-0 bottom-0 border-r border-r-border/10',
+                  isToday(d) ? 'bg-primary/[0.03]' : isWeekend(d) ? 'bg-muted/10' : '',
+                )}
+                style={{ left: i * DAY_WIDTH, width: DAY_WIDTH }}
+              />
+            )
+          })}
         </div>
-        {sortedTasks.length === 0 ? (
-          <div className="px-3 flex items-center text-[11px] text-muted-foreground/40" style={{ height: ROW_HEIGHT }}>
-            暂无任务
-          </div>
-        ) : (
-          sortedTasks.map(task => (
-            <div key={task.id} className="flex items-center gap-2 px-3 border-b border-border/20" style={{ height: ROW_HEIGHT }}>
-              <div className={cn('w-2 h-2 rounded-full shrink-0', task.color)} />
-              <span className={cn('text-[12px] truncate flex-1', task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground')}>
-                {task.name}
-              </span>
-              <Badge variant={STATUS_VARIANTS[task.status]} className="text-[9px] px-1 py-0 h-4 shrink-0 leading-none">
-                {STATUS_LABELS[task.status]}
-              </Badge>
-            </div>
-          ))
-        )}
       </div>
     )
 
@@ -761,18 +710,59 @@ export function register(ctx: any) {
     // Main
     // =====================================================================
 
+    // Rows for left panel — must exactly match TimelineBody row count & heights
+    const LeftRows = () => (
+      <>
+        {sortedTasks.length === 0 ? (
+          <div className="flex items-center px-3 text-[11px] text-muted-foreground/40 border-b border-border/20" style={{ height: ROW_HEIGHT }}>
+            暂无任务
+          </div>
+        ) : (
+          sortedTasks.map(task => (
+            <div key={task.id} className="flex items-center gap-2 px-3 border-b border-border/20 bg-card" style={{ height: ROW_HEIGHT }}>
+              <div className={cn('w-2 h-2 rounded-full shrink-0', task.color)} />
+              <span className={cn('text-[12px] truncate flex-1', task.status === 'completed' ? 'line-through text-muted-foreground' : 'text-foreground')}>
+                {task.name}
+              </span>
+              <Badge variant={STATUS_VARIANTS[task.status]} className="text-[9px] px-1 py-0 h-4 shrink-0 leading-none">
+                {STATUS_LABELS[task.status]}
+              </Badge>
+            </div>
+          ))
+        )}
+        {/* Empty bottom row — match TimelineBody */}
+        <div className="border-b border-border/20 bg-card" style={{ height: ROW_HEIGHT }} />
+      </>
+    )
+
     return (
       <div className="h-full flex flex-col bg-background select-none">
         <TitleBar />
-        <div className="flex flex-1 overflow-hidden">
-          <TaskListPanel />
-          <div ref={scrollRef} className="flex-1 overflow-auto" onScroll={handleMainScroll}>
-            <div style={{ minWidth: totalDays * DAY_WIDTH }}>
-              <TimelineHeader />
-              <TimelineBody />
+
+        {/* Unified scroll container: left panel + right timeline scroll together */}
+        <div ref={scrollRef} className="flex-1 overflow-auto">
+          <div className="flex" style={{ minWidth: LEFT_WIDTH + totalDays * DAY_WIDTH, minHeight: '100%' }}>
+            {/* Left panel: sticky during horizontal scroll, vertically inline with timeline */}
+            <div className="sticky left-0 z-20 bg-card border-r border-border" style={{ width: LEFT_WIDTH }}>
+              {/* Header — same height as TimelineHeader */}
+              <div className="sticky top-0 z-30 bg-card border-b border-border px-3 flex items-center" style={{ height: 34 }}>
+                <span className="text-[11px] font-semibold text-muted-foreground">任务名称</span>
+                <span className="ml-auto text-[10px] text-muted-foreground/50">{tasks.length}</span>
+              </div>
+              <LeftRows />
+            </div>
+
+            {/* Right: timeline — shares vertical scroll, scrolls horizontally */}
+            <div className="flex-1 relative">
+              <GridOverlay />
+              <div className="relative">
+                <TimelineHeader />
+                <TimelineBody />
+              </div>
             </div>
           </div>
         </div>
+
         {contextMenu && <ContextMenuPopup />}
         {dialog && <TaskFormDialog dialog={dialog} />}
         {tooltip && <TaskTooltipPopup tooltip={tooltip} />}

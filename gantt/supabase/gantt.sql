@@ -6,7 +6,7 @@
 -- 1. 创建甘特图任务表
 CREATE TABLE IF NOT EXISTS public.gantt_tasks (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id     UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
   name        TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   start_date  DATE NOT NULL,

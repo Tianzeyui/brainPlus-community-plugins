@@ -1,0 +1,11 @@
+{
+  "id": "gantt",
+  "name": "甘特图",
+  "version": "1.0.0",
+  "description": "项目管理甘特图，任务规划与时间线可视化",
+  "icon": "BarChart3",
+  "navOrder": 80,
+  "enabled": true,
+  "systemHeader": false,
+  "permissions": ["supabase"]
+}

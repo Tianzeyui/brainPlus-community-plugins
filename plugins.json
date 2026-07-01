@@ -25,5 +25,14 @@
     "icon": "Lightbulb",
     "permissions": ["ai", "files", "cloudinary"],
     "files": ["manifest.json", "index.tsx", "package.json", "supabase/inspiration.sql"]
+  },
+  {
+    "id": "gantt",
+    "name": "甘特图",
+    "version": "1.0.0",
+    "description": "项目管理甘特图，任务规划与时间线可视化",
+    "icon": "BarChart3",
+    "permissions": ["supabase"],
+    "files": ["manifest.json", "index.tsx", "package.json", "supabase/gantt.sql"]
   }
 ]

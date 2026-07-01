@@ -491,17 +491,17 @@ export function register(ctx: any) {
 
       return (
         <div data-backdrop="true"
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-8"
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-8"
           onClick={(ev) => { if ((ev.target as HTMLElement).dataset.backdrop === 'true') setDialog(null) }}
           onKeyDown={(ev) => { if (ev.key === 'Escape') setDialog(null) }}>
           <div className="bg-card rounded-lg border border-border shadow-xl w-[360px] max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border/50">
+            <div className="flex items-center justify-between px-6 py-3 border-b border-border/50">
               <h3 className="text-[13px] font-semibold">{dialog.mode === 'create' ? '新增工作' : '编辑工作'}</h3>
               <button className="h-5 w-5 rounded hover:bg-muted flex items-center justify-center" onClick={() => setDialog(null)}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>
             </div>
             {/* Body */}
-            <div className="px-5 py-4 space-y-3.5">
+            <div className="px-6 py-4 space-y-3.5">
               <div className="space-y-1.5">
                 <span className="text-[11px] font-medium text-muted-foreground">任务名称</span>
                 <input
@@ -543,7 +543,7 @@ export function register(ctx: any) {
               </div>
             </div>
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border/50 bg-muted/20 rounded-b-lg">
+            <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-border/50 bg-muted/20 rounded-b-lg">
               <Button variant="ghost" size="sm" className="h-7 text-[11px] px-3" onClick={() => setDialog(null)} disabled={saving}>取消</Button>
               <Button size="sm" className="h-7 text-[11px] px-4" onClick={submit} disabled={saving}>
                 {saving && <Loader2 className="h-3 w-3 animate-spin mr-1" />}

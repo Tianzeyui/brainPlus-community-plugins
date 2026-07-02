@@ -147,20 +147,21 @@ export function register(ctx: any) {
     const [loadError, setLoadError] = useState('')
     const [saving, setSaving] = useState(false)
     const [supabaseOk, setSupabaseOk] = useState(true)
-    const [dayWidth, setDayWidth] = useState(DEFAULT_DAY_WIDTH)   // zoom: changes column width
+    const [dayWidth, setDayWidth] = useState(DEFAULT_DAY_WIDTH)
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
     const [tooltip, setTooltip] = useState<TooltipState | null>(null)
     const [dialog, setDialog] = useState<DialogState | null>(null)
+
+    // viewDate: the first visible date. Changes on month/year navigation → full redraw.
+    const [viewDate, setViewDate] = useState<Date>(() => {
+      const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d  // 1st of current month
+    })
 
     const scrollRef = useRef<HTMLDivElement>(null)
     const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const tooltipDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const contextMenuRef = useRef<HTMLDivElement>(null)
     const tooltipRef = useRef<HTMLDivElement>(null)
-
-    // Anchor date: fixed, never changes
-    const anchorRef = useRef<Date>(getMonday(new Date()))
-    const anchor = anchorRef.current
 
     // ---- Derived ----
     const sortedTasks = useMemo(() =>
@@ -170,23 +171,35 @@ export function register(ctx: any) {
       }),
     [tasks])
 
-    // Total grid days: cover anchor → latest ddl + 14d padding, at least 21
-    const totalDays = useMemo(() => {
-      if (tasks.length === 0) return 21
-      let latest = anchor
+    // gridStart: earliest date shown. May shift left to cover tasks before viewDate.
+    const gridStart = useMemo(() => {
+      if (tasks.length === 0) return viewDate
+      let earliest = viewDate
+      tasks.forEach(t => {
+        const s = parseDate(t.startDate)
+        if (s < earliest) earliest = s
+      })
+      // Pad 7 days before earliest task
+      const d = new Date(earliest); d.setDate(d.getDate() - 7)
+      // Use the earlier of viewDate or earliest-7d
+      return d < viewDate ? d : viewDate
+    }, [tasks, viewDate])
+
+    const gridTotalDays = useMemo(() => {
+      let latest = gridStart
       tasks.forEach(t => {
         const d = parseDate(t.ddl)
         if (d > latest) latest = d
       })
-      return Math.max(21, diffDays(latest, anchor) + 1 + 14)
-    }, [tasks, anchor])
+      return Math.max(42, diffDays(latest, gridStart) + 1 + 14)
+    }, [tasks, gridStart])
 
-    // Month spans for header (must be before any early return)
+    // Month spans for header
     const monthSpans = useMemo(() => {
       const spans: { label: string; cols: number }[] = []
       let cur: { label: string; cols: number } | null = null
-      for (let i = 0; i < totalDays; i++) {
-        const d = new Date(anchor); d.setDate(d.getDate() + i)
+      for (let i = 0; i < gridTotalDays; i++) {
+        const d = new Date(gridStart); d.setDate(d.getDate() + i)
         const label = `${d.getFullYear()}年${d.getMonth() + 1}月`
         if (cur && cur.label === label) { cur.cols++ }
         else {
@@ -196,7 +209,7 @@ export function register(ctx: any) {
       }
       if (cur) spans.push(cur)
       return spans
-    }, [totalDays, anchor])
+    }, [gridTotalDays, gridStart])
 
     // ---- Load tasks ----
     const loadTasks = useCallback(async () => {
@@ -217,13 +230,22 @@ export function register(ctx: any) {
       loadTasks()
     }, [supabase, loadTasks])
 
-    // Scroll today into view
+    // Scroll today into view after mount or viewDate change
     useEffect(() => {
       if (loaded && scrollRef.current) {
-        const offset = diffDays(new Date(), anchor)
-        if (offset >= 0) scrollRef.current.scrollLeft = Math.max(0, LEFT_WIDTH + offset * DEFAULT_DAY_WIDTH - 120)
+        const offset = diffDays(new Date(), gridStart)
+        if (offset >= 0 && offset < gridTotalDays) {
+          scrollRef.current.scrollLeft = Math.max(0, LEFT_WIDTH + offset * dayWidth - 120)
+        }
       }
-    }, [loaded, anchor])
+    }, [loaded, gridStart, dayWidth, gridTotalDays])
+
+    // Reset scroll position when viewDate changes (month navigation)
+    useEffect(() => {
+      if (loaded && scrollRef.current) {
+        scrollRef.current.scrollLeft = 0
+      }
+    }, [viewDate, loaded])
 
     // ---- Context menu dismiss ----
     useEffect(() => {
@@ -252,12 +274,12 @@ export function register(ctx: any) {
       const r = el.getBoundingClientRect()
       const px = e.clientX - r.left + el.scrollLeft - LEFT_WIDTH
       const idx = Math.max(0, Math.floor(px / dayWidth))
-      const d = new Date(anchor); d.setDate(d.getDate() + idx)
+      const d = new Date(gridStart); d.setDate(d.getDate() + idx)
       let mx = e.clientX, my = e.clientY
       if (mx + 170 > window.innerWidth) mx = window.innerWidth - 175
       if (my + 50 > window.innerHeight) my = window.innerHeight - 55
       setContextMenu({ x: mx, y: my, date: formatDate(d) })
-    }, [anchor, dayWidth])
+    }, [gridStart, dayWidth])
 
     // ---- CRUD ----
     const handleSave = useCallback(async (data: Omit<Task, 'id' | 'createdAt' | 'color'>, editId?: string) => {
@@ -334,17 +356,27 @@ export function register(ctx: any) {
 
     // ---- Navigation ----
     const goToday = useCallback(() => {
-      if (scrollRef.current) {
-        const offset = diffDays(new Date(), anchor)
-        // LEFT_WIDTH accounts for the sticky left panel, -100 to put today near left edge
-        scrollRef.current.scrollTo({ left: Math.max(0, LEFT_WIDTH + offset * dayWidth - 120), behavior: 'smooth' })
-      }
-    }, [anchor, dayWidth])
+      const now = new Date()
+      setViewDate(new Date(now.getFullYear(), now.getMonth(), 1))
+      // Scroll after render — use requestAnimationFrame
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          const offset = diffDays(now, gridStart)
+          scrollRef.current.scrollLeft = Math.max(0, LEFT_WIDTH + offset * dayWidth - 120)
+        }
+      })
+    }, [dayWidth, gridStart])
 
-    const panLeft  = useCallback(() => { scrollRef.current?.scrollBy({ left: -400, behavior: 'smooth' }) }, [])
-    const panRight = useCallback(() => { scrollRef.current?.scrollBy({ left: 400, behavior: 'smooth' }) }, [])
-    const panMonthLeft  = useCallback(() => { scrollRef.current?.scrollBy({ left: -30 * dayWidth, behavior: 'smooth' }) }, [dayWidth])
-    const panMonthRight = useCallback(() => { scrollRef.current?.scrollBy({ left: 30 * dayWidth, behavior: 'smooth' }) }, [dayWidth])
+    const panMonthLeft = useCallback(() => {
+      setViewDate(prev => { const d = new Date(prev); d.setMonth(d.getMonth() - 1); return d })
+    }, [])
+
+    const panMonthRight = useCallback(() => {
+      setViewDate(prev => { const d = new Date(prev); d.setMonth(d.getMonth() + 1); return d })
+    }, [])
+
+    const panLeft  = useCallback(() => { scrollRef.current?.scrollBy({ left: -7 * dayWidth, behavior: 'smooth' }) }, [dayWidth])
+    const panRight = useCallback(() => { scrollRef.current?.scrollBy({ left: 7 * dayWidth, behavior: 'smooth' }) }, [dayWidth])
 
     const zoomIn  = useCallback(() => setDayWidth(d => clamp(d + 8, 28, 100)), [])
     const zoomOut = useCallback(() => setDayWidth(d => clamp(d - 8, 28, 100)), [])
@@ -382,7 +414,7 @@ export function register(ctx: any) {
     const DAY_H = 34
 
     const TimelineHeader = () => {
-      const w = totalDays * dayWidth
+      const w = gridTotalDays * dayWidth
       return (
         <div className="sticky top-0 z-10 bg-card" style={{ width: w }}>
           {/* Month row */}
@@ -397,8 +429,8 @@ export function register(ctx: any) {
           </div>
           {/* Day row */}
           <div className="flex border-b border-border" style={{ height: DAY_H }}>
-            {Array.from({ length: totalDays }, (_, i) => {
-              const d = new Date(anchor); d.setDate(d.getDate() + i)
+            {Array.from({ length: gridTotalDays }, (_, i) => {
+              const d = new Date(gridStart); d.setDate(d.getDate() + i)
               const today = isToday(d)
               return (
                 <div key={i}
@@ -421,7 +453,7 @@ export function register(ctx: any) {
     const TaskBar = ({ task }: { task: Task }) => {
       const start = parseDate(task.startDate)
       const end = parseDate(task.ddl)
-      const left = diffDays(start, anchor) * dayWidth
+      const left = diffDays(start, gridStart) * dayWidth
       const barW = Math.max((diffDays(end, start) + 1) * dayWidth, MIN_BAR_WIDTH)
       const overdue = parseDate(task.ddl) < new Date() && task.status !== 'completed'
       const hex = COLOR_HEX[task.color] || '#4895ef'
@@ -446,7 +478,7 @@ export function register(ctx: any) {
     }
 
     const TimelineBody = () => (
-      <div style={{ width: totalDays * dayWidth }} onContextMenu={handleContextMenu}>
+      <div style={{ width: gridTotalDays * dayWidth }} onContextMenu={handleContextMenu}>
         {sortedTasks.length === 0 ? (
           <div className="flex items-center justify-center text-xs text-muted-foreground/40 select-none border-b border-border/20" style={{ height: ROW_HEIGHT }}>右键此处新增工作</div>
         ) : (
@@ -462,9 +494,9 @@ export function register(ctx: any) {
     // Grid drawn once behind bars
     const GridOverlay = () => (
       <div className="absolute inset-0 pointer-events-none">
-        <div style={{ width: totalDays * dayWidth, height: '100%' }}>
-          {Array.from({ length: totalDays }, (_, i) => {
-            const d = new Date(anchor); d.setDate(d.getDate() + i)
+        <div style={{ width: gridTotalDays * dayWidth, height: '100%' }}>
+          {Array.from({ length: gridTotalDays }, (_, i) => {
+            const d = new Date(gridStart); d.setDate(d.getDate() + i)
             return (
               <div key={i}
                 className={cn('absolute top-0 bottom-0 border-r border-r-border/10', isToday(d) && 'bg-primary/[0.03]', isWeekend(d) && !isToday(d) && 'bg-muted/10')}
@@ -666,7 +698,7 @@ export function register(ctx: any) {
       <div className="h-full flex flex-col bg-background select-none">
         <TitleBar />
         <div ref={scrollRef} className="flex-1 overflow-auto">
-          <div className="flex" style={{ minWidth: LEFT_WIDTH + totalDays * dayWidth, minHeight: '100%' }}>
+          <div className="flex" style={{ minWidth: LEFT_WIDTH + gridTotalDays * dayWidth, minHeight: '100%' }}>
             {/* Left panel — sticky during horizontal scroll, shares vertical flow */}
             <div className="sticky left-0 z-40 bg-card" style={{ width: LEFT_WIDTH, boxShadow: '1px 0 0 0 hsl(var(--border)), 2px 0 4px rgba(0,0,0,0.05)' }}>
               <div className="sticky top-0 z-40 bg-card border-b border-border px-3 flex items-center" style={{ height: HEADER_H }}>
@@ -676,7 +708,7 @@ export function register(ctx: any) {
               <LeftRows />
             </div>
             {/* Right — timeline */}
-            <div className="flex-1 relative" style={{ minWidth: totalDays * dayWidth }}>
+            <div className="flex-1 relative" style={{ minWidth: gridTotalDays * dayWidth }}>
               <GridOverlay />
               <TimelineHeader />
               <TimelineBody />

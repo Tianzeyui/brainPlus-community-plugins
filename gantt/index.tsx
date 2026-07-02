@@ -286,21 +286,6 @@ export function register(ctx: any) {
       }
     }, [viewDate, loaded])
 
-    // Scroll arrow visibility
-    const [canScrollLeft, setCanScrollLeft] = useState(false)
-    const [canScrollRight, setCanScrollRight] = useState(true)
-    const updateScrollArrows = useCallback(() => {
-      const el = scrollRef.current; if (!el) return
-      setCanScrollLeft(el.scrollLeft > 4)
-      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4)
-    }, [])
-    useEffect(() => {
-      const el = scrollRef.current; if (!el) return
-      updateScrollArrows()
-      el.addEventListener('scroll', updateScrollArrows, { passive: true })
-      return () => el.removeEventListener('scroll', updateScrollArrows)
-    }, [loaded, gridTotalCols, dayWidth, updateScrollArrows])
-
     // ---- Context menu dismiss ----
     useEffect(() => {
       if (!contextMenu) return
@@ -418,8 +403,24 @@ export function register(ctx: any) {
       }
     }, [viewMode])
 
-    const scrollLeft  = useCallback(() => { scrollRef.current?.scrollBy({ left: -viewCfg.scrollAmount * dayWidth, behavior: 'smooth' }) }, [dayWidth, viewCfg])
-    const scrollRight = useCallback(() => { scrollRef.current?.scrollBy({ left: viewCfg.scrollAmount * dayWidth, behavior: 'smooth' }) }, [dayWidth, viewCfg])
+    // Arrow navigation: change viewDate by one period → full redraw
+    const navPrev = useCallback(() => {
+      setViewDate(prev => {
+        const d = new Date(prev)
+        if (viewMode === 'year') d.setFullYear(d.getFullYear() - 1)
+        else d.setMonth(d.getMonth() - 1)
+        return d
+      })
+    }, [viewMode])
+
+    const navNext = useCallback(() => {
+      setViewDate(prev => {
+        const d = new Date(prev)
+        if (viewMode === 'year') d.setFullYear(d.getFullYear() + 1)
+        else d.setMonth(d.getMonth() + 1)
+        return d
+      })
+    }, [viewMode])
 
     const switchMode = useCallback((m: ViewMode) => {
       const now = new Date()
@@ -779,17 +780,13 @@ export function register(ctx: any) {
               <GridOverlay />
               <TimelineHeader />
               <TimelineBody />
-              {/* Scroll arrows on timeline edges */}
-              {canScrollLeft && (
-                <button className="absolute left-0 z-50 w-7 h-10 rounded-r border border-border bg-card/90 shadow flex items-center justify-center hover:bg-accent"
-                  style={{ top: `calc(50% + ${HEADER_H / 2}px)`, transform: 'translateY(-50%)' }}
-                  onClick={scrollLeft}><ChevronLeft className="h-4 w-4" /></button>
-              )}
-              {canScrollRight && (
-                <button className="absolute right-0 z-50 w-7 h-10 rounded-l border border-border bg-card/90 shadow flex items-center justify-center hover:bg-accent"
-                  style={{ top: `calc(50% + ${HEADER_H / 2}px)`, transform: 'translateY(-50%)' }}
-                  onClick={scrollRight}><ChevronRight className="h-4 w-4" /></button>
-              )}
+              {/* Navigation arrows — change viewDate by one period */}
+              <button className="absolute left-0 z-50 w-7 h-10 rounded-r border border-border bg-card shadow flex items-center justify-center hover:bg-accent"
+                style={{ top: '50%', transform: 'translateY(-50%)' }}
+                onClick={navPrev}><ChevronLeft className="h-4 w-4" /></button>
+              <button className="absolute right-0 z-50 w-7 h-10 rounded-l border border-border bg-card shadow flex items-center justify-center hover:bg-accent"
+                style={{ top: '50%', transform: 'translateY(-50%)' }}
+                onClick={navNext}><ChevronRight className="h-4 w-4" /></button>
             </div>
           </div>
         </div>

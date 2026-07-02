@@ -360,14 +360,14 @@ export function register(ctx: any) {
     const TimelineHeader = () => {
       const w = totalDays * dayWidth
       return (
-        <div className="sticky top-0 z-10 bg-card flex border-b border-border" style={{ width: w }}>
+        <div className="sticky top-0 z-10 bg-card flex border-b border-border" style={{ width: w, height: 34 }}>
           {Array.from({ length: totalDays }, (_, i) => {
             const d = new Date(anchor); d.setDate(d.getDate() + i)
             const today = isToday(d)
             return (
               <div key={i}
                 className={cn('flex flex-col items-center justify-center shrink-0 border-r border-r-border/20', today && 'bg-primary/10', isWeekend(d) && !today && 'bg-muted/30')}
-                style={{ width: dayWidth, height: 34 }}>
+                style={{ width: dayWidth, height: 33 }}>
                 <span className={cn('text-[10px] leading-tight', today ? 'text-primary font-semibold' : isWeekend(d) ? 'text-muted-foreground' : 'text-foreground')}>
                   {d.getMonth() + 1}/{d.getDate()}
                 </span>

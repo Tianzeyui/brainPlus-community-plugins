@@ -326,6 +326,8 @@ export function register(ctx: any) {
 
     const panLeft  = useCallback(() => { scrollRef.current?.scrollBy({ left: -400, behavior: 'smooth' }) }, [])
     const panRight = useCallback(() => { scrollRef.current?.scrollBy({ left: 400, behavior: 'smooth' }) }, [])
+    const panMonthLeft  = useCallback(() => { scrollRef.current?.scrollBy({ left: -30 * dayWidth, behavior: 'smooth' }) }, [dayWidth])
+    const panMonthRight = useCallback(() => { scrollRef.current?.scrollBy({ left: 30 * dayWidth, behavior: 'smooth' }) }, [dayWidth])
 
     const zoomIn  = useCallback(() => setDayWidth(d => clamp(d + 8, 28, 100)), [])
     const zoomOut = useCallback(() => setDayWidth(d => clamp(d - 8, 28, 100)), [])
@@ -358,26 +360,60 @@ export function register(ctx: any) {
     // Sub-components
     // =====================================================================
 
+    // Compute month spans for the header
+    const monthSpans = useMemo(() => {
+      const spans: { label: string; cols: number }[] = []
+      let cur: { label: string; cols: number } | null = null
+      for (let i = 0; i < totalDays; i++) {
+        const d = new Date(anchor); d.setDate(d.getDate() + i)
+        const label = `${d.getFullYear()}年${d.getMonth() + 1}月`
+        if (cur && cur.label === label) { cur.cols++ }
+        else {
+          if (cur) spans.push(cur)
+          cur = { label, cols: 1 }
+        }
+      }
+      if (cur) spans.push(cur)
+      return spans
+    }, [totalDays, anchor])
+
+    const HEADER_H = 52  // month row 18 + day row 34
+    const MONTH_H = 18
+    const DAY_H = 34
+
     const TimelineHeader = () => {
       const w = totalDays * dayWidth
       return (
-        <div className="sticky top-0 z-10 bg-card flex border-b border-border" style={{ width: w, height: 34 }}>
-          {Array.from({ length: totalDays }, (_, i) => {
-            const d = new Date(anchor); d.setDate(d.getDate() + i)
-            const today = isToday(d)
-            return (
+        <div className="sticky top-0 z-10 bg-card" style={{ width: w }}>
+          {/* Month row */}
+          <div className="flex border-b border-border/30" style={{ height: MONTH_H }}>
+            {monthSpans.map((ms, i) => (
               <div key={i}
-                className={cn('flex flex-col items-center justify-center shrink-0 border-r border-r-border/20', today && 'bg-primary/10', isWeekend(d) && !today && 'bg-muted/30')}
-                style={{ width: dayWidth, height: 33 }}>
-                <span className={cn('text-[10px] leading-tight', today ? 'text-primary font-semibold' : isWeekend(d) ? 'text-muted-foreground' : 'text-foreground')}>
-                  {d.getMonth() + 1}/{d.getDate()}
-                </span>
-                <span className={cn('text-[9px] leading-tight', today ? 'text-primary/60' : 'text-muted-foreground/50')}>
-                  {WEEKDAY_LABELS[d.getDay()]}
-                </span>
+                className="flex items-center justify-center border-r border-border/20 text-[10px] text-muted-foreground font-medium shrink-0"
+                style={{ width: ms.cols * dayWidth }}>
+                {ms.label}
               </div>
-            )
-          })}
+            ))}
+          </div>
+          {/* Day row */}
+          <div className="flex border-b border-border" style={{ height: DAY_H }}>
+            {Array.from({ length: totalDays }, (_, i) => {
+              const d = new Date(anchor); d.setDate(d.getDate() + i)
+              const today = isToday(d)
+              return (
+                <div key={i}
+                  className={cn('flex flex-col items-center justify-center shrink-0 border-r border-r-border/20', today && 'bg-primary/10', isWeekend(d) && !today && 'bg-muted/30')}
+                  style={{ width: dayWidth, height: DAY_H }}>
+                  <span className={cn('text-[10px] leading-tight', today ? 'text-primary font-semibold' : isWeekend(d) ? 'text-muted-foreground' : 'text-foreground')}>
+                    {d.getMonth() + 1}/{d.getDate()}
+                  </span>
+                  <span className={cn('text-[9px] leading-tight', today ? 'text-primary/60' : 'text-muted-foreground/50')}>
+                    {WEEKDAY_LABELS[d.getDay()]}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )
     }
@@ -609,6 +645,11 @@ export function register(ctx: any) {
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut}><ZoomOut className="h-3.5 w-3.5" /></Button>
         </div>
         <div className="flex items-center gap-0.5">
+          <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={panMonthLeft}><ChevronLeft className="h-3 w-3" /><ChevronLeft className="h-3 w-3 -ml-1.5" /></Button>
+          <span className="text-[10px] text-muted-foreground w-6 text-center">月</span>
+          <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={panMonthRight}><ChevronRight className="h-3 w-3" /><ChevronRight className="h-3 w-3 -ml-1.5" /></Button>
+        </div>
+        <div className="flex items-center gap-0.5">
           <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={panLeft}><ChevronLeft className="h-3.5 w-3.5" /></Button>
           <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={goToday}>今天</Button>
           <Button variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={panRight}><ChevronRight className="h-3.5 w-3.5" /></Button>
@@ -628,7 +669,7 @@ export function register(ctx: any) {
           <div className="flex" style={{ minWidth: LEFT_WIDTH + totalDays * dayWidth, minHeight: '100%' }}>
             {/* Left panel — sticky during horizontal scroll, shares vertical flow */}
             <div className="sticky left-0 z-40 bg-card" style={{ width: LEFT_WIDTH, boxShadow: '1px 0 0 0 hsl(var(--border)), 2px 0 4px rgba(0,0,0,0.05)' }}>
-              <div className="sticky top-0 z-40 bg-card border-b border-border px-3 flex items-center" style={{ height: 34 }}>
+              <div className="sticky top-0 z-40 bg-card border-b border-border px-3 flex items-center" style={{ height: HEADER_H }}>
                 <span className="text-[11px] font-semibold text-muted-foreground">任务名称</span>
                 <span className="ml-auto text-[10px] text-muted-foreground/50">{tasks.length}</span>
               </div>

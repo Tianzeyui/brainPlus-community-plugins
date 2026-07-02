@@ -181,6 +181,23 @@ export function register(ctx: any) {
       return Math.max(21, diffDays(latest, anchor) + 1 + 14)
     }, [tasks, anchor])
 
+    // Month spans for header (must be before any early return)
+    const monthSpans = useMemo(() => {
+      const spans: { label: string; cols: number }[] = []
+      let cur: { label: string; cols: number } | null = null
+      for (let i = 0; i < totalDays; i++) {
+        const d = new Date(anchor); d.setDate(d.getDate() + i)
+        const label = `${d.getFullYear()}年${d.getMonth() + 1}月`
+        if (cur && cur.label === label) { cur.cols++ }
+        else {
+          if (cur) spans.push(cur)
+          cur = { label, cols: 1 }
+        }
+      }
+      if (cur) spans.push(cur)
+      return spans
+    }, [totalDays, anchor])
+
     // ---- Load tasks ----
     const loadTasks = useCallback(async () => {
       setLoading(true); setLoadError('')
@@ -359,23 +376,6 @@ export function register(ctx: any) {
     // =====================================================================
     // Sub-components
     // =====================================================================
-
-    // Compute month spans for the header
-    const monthSpans = useMemo(() => {
-      const spans: { label: string; cols: number }[] = []
-      let cur: { label: string; cols: number } | null = null
-      for (let i = 0; i < totalDays; i++) {
-        const d = new Date(anchor); d.setDate(d.getDate() + i)
-        const label = `${d.getFullYear()}年${d.getMonth() + 1}月`
-        if (cur && cur.label === label) { cur.cols++ }
-        else {
-          if (cur) spans.push(cur)
-          cur = { label, cols: 1 }
-        }
-      }
-      if (cur) spans.push(cur)
-      return spans
-    }, [totalDays, anchor])
 
     const HEADER_H = 52  // month row 18 + day row 34
     const MONTH_H = 18

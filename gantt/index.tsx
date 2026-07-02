@@ -376,8 +376,10 @@ export function register(ctx: any) {
         const rect = el.getBoundingClientRect()
         const tw = 280, th = 180
         let tx = rect.left + rect.width / 2 - tw / 2
-        let ty = rect.top - th - 8
-        if (ty < 8) ty = rect.bottom + 8
+        // Always show below the bar
+        let ty = rect.bottom + 8
+        // If not enough room below, fall back to above
+        if (ty + th > window.innerHeight - 8) ty = rect.top - th - 8
         tx = clamp(tx, 8, window.innerWidth - tw - 8)
         ty = clamp(ty, 8, window.innerHeight - th - 8)
         setTooltip({ task, x: tx, y: ty })

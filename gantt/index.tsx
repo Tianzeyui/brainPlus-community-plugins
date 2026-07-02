@@ -801,10 +801,11 @@ export function register(ctx: any) {
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
 
-          {/* Right arrow — outside scroll area */}
-          <button className="shrink-0 w-7 border-l border-border bg-card flex items-center justify-center hover:bg-accent transition-colors group"
+          {/* Right arrow — absolute at right edge */}
+          <button className="absolute z-50 w-6 h-10 rounded-l border border-border bg-card shadow flex items-center justify-center hover:bg-accent transition-colors"
+            style={{ right: 0, top: '50%', transform: 'translateY(-50%)' }}
             onClick={navNext} title="下一周期">
-            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+            <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
         {contextMenu && <ContextMenuPopup />}

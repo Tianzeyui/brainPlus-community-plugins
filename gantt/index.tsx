@@ -396,12 +396,18 @@ export function register(ctx: any) {
     // ---- Navigation ----
     const goToday = useCallback(() => {
       const now = new Date()
-      if (viewMode === 'year') {
-        setViewDate(new Date(now.getFullYear(), 0, 1))
-      } else {
-        setViewDate(new Date(now.getFullYear(), now.getMonth(), 1))
-      }
-    }, [viewMode])
+      const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      setViewDate(firstOfMonth)
+      // Scroll today into view after render
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          const offset = viewMode === 'year'
+            ? now.getMonth()
+            : diffDays(now, firstOfMonth)
+          scrollRef.current.scrollLeft = Math.max(0, LEFT_WIDTH + offset * dayWidth - 120)
+        }
+      })
+    }, [viewMode, dayWidth])
 
     // Arrow navigation: change viewDate by one period → full redraw
     const navPrev = useCallback(() => {
@@ -765,30 +771,38 @@ export function register(ctx: any) {
     return (
       <div className="h-full flex flex-col bg-background select-none">
         <TitleBar />
-        <div ref={scrollRef} className="flex-1 overflow-auto">
-          <div className="flex" style={{ minWidth: LEFT_WIDTH + gridTotalCols * dayWidth, minHeight: '100%' }}>
-            {/* Left panel — sticky during horizontal scroll, shares vertical flow */}
-            <div className="sticky left-0 z-40 bg-card" style={{ width: LEFT_WIDTH, boxShadow: '1px 0 0 0 hsl(var(--border)), 2px 0 4px rgba(0,0,0,0.05)' }}>
-              <div className="sticky top-0 z-40 bg-card border-b border-border px-3 flex items-center" style={{ height: HEADER_H }}>
-                <span className="text-[11px] font-semibold text-muted-foreground">任务名称</span>
-                <span className="ml-auto text-[10px] text-muted-foreground/50">{tasks.length}</span>
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left arrow — outside scroll area, fixed at edge */}
+          <button className="shrink-0 w-7 border-r border-border bg-card flex items-center justify-center hover:bg-accent transition-colors group"
+            onClick={navPrev} title="上一周期">
+            <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+          </button>
+
+          {/* Scroll area */}
+          <div ref={scrollRef} className="flex-1 overflow-auto">
+            <div className="flex" style={{ minWidth: LEFT_WIDTH + gridTotalCols * dayWidth, minHeight: '100%' }}>
+              {/* Left panel */}
+              <div className="sticky left-0 z-40 bg-card" style={{ width: LEFT_WIDTH, boxShadow: '1px 0 0 0 hsl(var(--border)), 2px 0 4px rgba(0,0,0,0.05)' }}>
+                <div className="sticky top-0 z-40 bg-card border-b border-border px-3 flex items-center" style={{ height: HEADER_H }}>
+                  <span className="text-[11px] font-semibold text-muted-foreground">任务名称</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground/50">{tasks.length}</span>
+                </div>
+                <LeftRows />
               </div>
-              <LeftRows />
-            </div>
-            {/* Right — timeline */}
-            <div className="flex-1 relative" style={{ minWidth: gridTotalCols * dayWidth }}>
-              <GridOverlay />
-              <TimelineHeader />
-              <TimelineBody />
-              {/* Navigation arrows — change viewDate by one period */}
-              <button className="absolute left-0 z-50 w-7 h-10 rounded-r border border-border bg-card shadow flex items-center justify-center hover:bg-accent"
-                style={{ top: '50%', transform: 'translateY(-50%)' }}
-                onClick={navPrev}><ChevronLeft className="h-4 w-4" /></button>
-              <button className="absolute right-0 z-50 w-7 h-10 rounded-l border border-border bg-card shadow flex items-center justify-center hover:bg-accent"
-                style={{ top: '50%', transform: 'translateY(-50%)' }}
-                onClick={navNext}><ChevronRight className="h-4 w-4" /></button>
+              {/* Timeline */}
+              <div className="flex-1 relative" style={{ minWidth: gridTotalCols * dayWidth }}>
+                <GridOverlay />
+                <TimelineHeader />
+                <TimelineBody />
+              </div>
             </div>
           </div>
+
+          {/* Right arrow — outside scroll area */}
+          <button className="shrink-0 w-7 border-l border-border bg-card flex items-center justify-center hover:bg-accent transition-colors group"
+            onClick={navNext} title="下一周期">
+            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+          </button>
         </div>
         {contextMenu && <ContextMenuPopup />}
         {dialog && <TaskFormDialog dialog={dialog} />}
